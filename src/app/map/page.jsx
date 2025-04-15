@@ -1,7 +1,4 @@
-'use client';
-
 import SimpleComponent from '@/components/SimpleComponent';
-import InteractiveMap from '@/components/InteractiveMap';
 
 export default function Map() {
   console.log('🏠 Map page rendered');
