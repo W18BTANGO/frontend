@@ -1,2 +1,4 @@
+nsw_suburbs.json filter=lfs diff=lfs merge=lfs -text
+data/combined_suburb_data.json filter=lfs diff=lfs merge=lfs -text
 public/nsw_suburbs.json filter=lfs diff=lfs merge=lfs -text
 public/combined_suburb_data.json filter=lfs diff=lfs merge=lfs -text
