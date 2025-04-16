@@ -6,6 +6,11 @@ export default function SuburbInfo({ suburb, selectedYear }) {
             <div className="p-4 border-b border-gray-200">
                 <h2 className="font-semibold text-lg">{suburb.name}</h2>
                 <p className="text-sm text-gray-500">Climate risk assessment for {selectedYear}</p>
+                {suburb.matchedRisk && (
+                    <p className="text-sm text-red-600 mt-1">
+                        <span className="font-semibold">Highest risk:</span> {suburb.matchedRisk}
+                    </p>
+                )}
             </div>
             <div className="p-4 space-y-4">
                 {Object.entries(suburb.risks).map(([riskType, score]) => (

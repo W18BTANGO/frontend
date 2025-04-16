@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-export default function RiskMap() {
+export default function RiskMap({ onSuburbSelect }) {
     const mapContainer = useRef(null)
     const map = useRef(null)
     const [loaded, setLoaded] = useState(false)
@@ -283,6 +283,11 @@ export default function RiskMap() {
                 
                 const feature = e.features[0]
                 const suburbName = getSuburbName(feature)
+                
+                // Notify parent component about selected suburb
+                if (onSuburbSelect) {
+                    onSuburbSelect(suburbName)
+                }
                 
                 new maplibregl.Popup()
                     .setLngLat(e.lngLat)

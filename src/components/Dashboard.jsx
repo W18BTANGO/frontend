@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import TimelineSlider from "@/components/TimelineSlider"
@@ -36,9 +36,19 @@ export default function Dashboard() {
         { suburb: "West Ballina", properties: 1953, percentage: 93.6, risk: "Riverine Flooding" }
     ]
 
-    const handleSuburbSelect = (suburb) => {
-        setSelectedSuburb(suburb)
-    }
+    // Handle suburb selection from map
+    const handleSuburbSelect = useCallback((suburbName) => {
+        // Find if the suburb exists in our vulnerable suburbs list
+        const matchedSuburb = vulnerableSuburbs.find(s => s.suburb === suburbName);
+        
+        // Update the selected suburb with the new name, keeping existing risk data for now
+        setSelectedSuburb(prev => ({
+            ...prev,
+            name: suburbName,
+            // If we found a matching suburb in our data, use its risk
+            matchedRisk: matchedSuburb ? matchedSuburb.risk : null
+        }));
+    }, [vulnerableSuburbs]);
 
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
@@ -50,7 +60,7 @@ export default function Dashboard() {
                 <div className="max-w-7xl mx-auto space-y-6">
                     {/* Top Section: Map and Suburb Info */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <RiskMap />
+                        <RiskMap onSuburbSelect={handleSuburbSelect} />
                         <SuburbInfo suburb={selectedSuburb} selectedYear={selectedYear} />
                     </div>
 
