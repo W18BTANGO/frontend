@@ -1,31 +1,74 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useCallback } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
-import MapComponent from "@/components/map-component"
-import SidePopup from "./side-popup"
+import TimelineSlider from "@/components/TimelineSlider"
+import RiskMap from "@/components/RiskMap"
+import SuburbInfo from "@/components/SuburbInfo"
+import VulnerableSuburbs from "@/components/VulnerableSuburbs"
 
 export default function Dashboard() {
-    const [isSidePopupOpen, setIsSidePopupOpen] = useState(false)
-    const [selectedLocation, setSelectedLocation] = useState(null)
+    const [selectedYear, setSelectedYear] = useState(2025)
+    const [selectedSuburb, setSelectedSuburb] = useState({
+        name: "Ballina",
+        risks: {
+            "Coastal Inundation": 72,
+            "Extreme Wind": 45,
+            "Forest Fire": 38,
+            "Riverine Flooding": 89,
+            "Surface Water Flooding": 65,
+            "Tropical Cyclone Wind": 51
+        }
+    })
 
-    const toggleSidePopup = () => {
-        setIsSidePopupOpen(!isSidePopupOpen)
-    }
+    // Fake data for vulnerable suburbs
+    const vulnerableSuburbs = [
+        { suburb: "Ballina", properties: 8824, percentage: 99, risk: "Riverine Flooding" },
+        { suburb: "Tweed Heads South", properties: 5280, percentage: 82.5, risk: "Riverine Flooding" },
+        { suburb: "Tweed Heads", properties: 3602, percentage: 46.2, risk: "Riverine Flooding" },
+        { suburb: "Yamba", properties: 3377, percentage: 58.7, risk: "Riverine Flooding" },
+        { suburb: "Tweed Heads West", properties: 2585, percentage: 71.5, risk: "Riverine Flooding" },
+        { suburb: "Wyoming", properties: 2334, percentage: 42.9, risk: "Forest Fire" },
+        { suburb: "Parramatta", properties: 2322, percentage: 10.2, risk: "Surface Flooding" },
+        { suburb: "Lismore", properties: 2053, percentage: 57.7, risk: "Riverine Flooding" },
+        { suburb: "Liverpool", properties: 1990, percentage: 10.4, risk: "Riverine Flooding" },
+        { suburb: "West Ballina", properties: 1953, percentage: 93.6, risk: "Riverine Flooding" }
+    ]
 
-    const handleLocationSelect = (location) => {
-        setSelectedLocation(location)
-        setIsSidePopupOpen(true)
-    }
+    // Handle suburb selection from map
+    const handleSuburbSelect = useCallback((suburbName) => {
+        // Find if the suburb exists in our vulnerable suburbs list
+        const matchedSuburb = vulnerableSuburbs.find(s => s.suburb === suburbName);
+        
+        // Update the selected suburb with the new name, keeping existing risk data for now
+        setSelectedSuburb(prev => ({
+            ...prev,
+            name: suburbName,
+            // If we found a matching suburb in our data, use its risk
+            matchedRisk: matchedSuburb ? matchedSuburb.risk : null
+        }));
+    }, [vulnerableSuburbs]);
 
     return (
-        <div className="flex flex-col min-h-screen">
-            <Header toggleSidePopup={toggleSidePopup} />
-            <main className="flex-1 flex relative">
-                <MapComponent onLocationSelect={handleLocationSelect} />
-                <SidePopup isOpen={isSidePopupOpen} onClose={() => setIsSidePopupOpen(false)} location={selectedLocation} />
+        <div className="flex flex-col min-h-screen bg-gray-50">
+            <Header />
+            
+            <TimelineSlider selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
+
+            <main className="flex-1 p-6">
+                <div className="max-w-7xl mx-auto space-y-6">
+                    {/* Top Section: Map and Suburb Info */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <RiskMap onSuburbSelect={handleSuburbSelect} />
+                        <SuburbInfo suburb={selectedSuburb} selectedYear={selectedYear} />
+                    </div>
+
+                    {/* Bottom Section: Vulnerable Suburbs Rankings */}
+                    <VulnerableSuburbs suburbs={vulnerableSuburbs} selectedYear={selectedYear} />
+                </div>
             </main>
+            
             <Footer />
         </div>
     )
