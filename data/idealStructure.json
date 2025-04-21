@@ -1,0 +1,28 @@
+{
+    "time_object":
+        {
+            "timestamp": "2100-01-01T12:00:00Z",
+            "duration": "00:00:00",
+            "time-zone": "UTC"
+        },
+    "event_type":"low_emissions_impact",
+    "attributes":
+    {
+
+        "a": "Upper Bylong",
+        "bbox": [
+            150.09901416986102,
+            -32.57403006984459,
+            150.24874236404818,
+            -32.42119327423723
+        ],
+        "c": "24",
+        "Coastal Inundation": 0,
+        "Extreme Wind": 0,
+        "Forest Fire": 0.125,
+        "Riverine Flooding": 0.0417,
+        "Surface Water Flooding": 0,
+        "Tropical Cyclone Wind": 0,
+        "Total MVAR": 0.1667
+    }
+}
