@@ -38,6 +38,7 @@ export default function Dashboard() {
 
     const handleSuburbSelect = useCallback(async (suburbName) => {
         const suburbToUse = typeof suburbName === 'string' ? suburbName : selectedSuburb.name;
+        console.log('Current emissions scenario:', emissionsScenario);
         const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbToUse);
         console.log('Filtered Data:', filteredData);
         console.log('Suburb Name:', suburbToUse);
@@ -58,9 +59,12 @@ export default function Dashboard() {
             // Interpolate the risks for the target year
             const interpolatedRisks = interpolateRisks(yearData, targetYear);
             console.log('Interpolated Risks:', interpolatedRisks);
-            // Find the highest risk
-            const matchedRisk = Object.entries(interpolatedRisks).reduce((highest, [name, value]) =>
-                value > (highest.value || 0) ? { name, value } : highest, {}).name || "Unknown";
+            
+            // Find the highest risk, excluding "Total MVAR"
+            const matchedRisk = Object.entries(interpolatedRisks)
+                .filter(([name]) => name !== "Total MVAR") // Exclude Total MVAR
+                .reduce((highest, [name, value]) =>
+                    value > (highest.value || 0) ? { name, value } : highest, {}).name || "Unknown";
 
             // Update the selected suburb state
             setSelectedSuburb({
