@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import TimelineSlider from "@/components/TimelineSlider"
@@ -28,8 +28,8 @@ export default function Dashboard() {
         matchedRisk: "Riverine Flooding" // Adding matched risk for Ballina
     })
 
-    // Fake data for vulnerable suburbs with added risk information
-    const vulnerableSuburbs = [
+    // Fake data for vulnerable suburbs with added risk information - memoize to prevent rerenders
+    const vulnerableSuburbs = useMemo(() => [
         { suburb: "Ballina", properties: 8824, percentage: 99, risk: "Riverine Flooding" },
         { suburb: "Tweed Heads South", properties: 5280, percentage: 82.5, risk: "Riverine Flooding" },
         { suburb: "Tweed Heads", properties: 3602, percentage: 46.2, risk: "Riverine Flooding" },
@@ -40,7 +40,7 @@ export default function Dashboard() {
         { suburb: "Lismore", properties: 2053, percentage: 57.7, risk: "Riverine Flooding" },
         { suburb: "Liverpool", properties: 1990, percentage: 10.4, risk: "Riverine Flooding" },
         { suburb: "West Ballina", properties: 1953, percentage: 93.6, risk: "Riverine Flooding" }
-    ]
+    ], []);
 
     // Load all suburbs data
     useEffect(() => {
