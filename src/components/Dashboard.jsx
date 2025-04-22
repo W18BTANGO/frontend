@@ -13,6 +13,7 @@ export default function Dashboard() {
     const [emissionsScenario, setEmissionsScenario] = useState("High")
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState([])
+    const [allSuburbs, setAllSuburbs] = useState([])
     const [selectedSuburb, setSelectedSuburb] = useState({
         name: "Ballina",
         risks: {
@@ -41,6 +42,18 @@ export default function Dashboard() {
         { suburb: "West Ballina", properties: 1953, percentage: 93.6, risk: "Riverine Flooding" }
     ]
 
+    // Load all suburbs data
+    useEffect(() => {
+        fetch('/suburbs.json')
+            .then(response => response.json())
+            .then(data => {
+                setAllSuburbs(data);
+            })
+            .catch(error => {
+                console.error('Error loading suburbs data:', error);
+            });
+    }, []);
+
     // Handle suburb selection from map
     const handleSuburbSelect = useCallback((suburbName) => {
         // Find if the suburb exists in our vulnerable suburbs list
@@ -60,16 +73,30 @@ export default function Dashboard() {
 
     // Handle search functionality
     useEffect(() => {
-        if (searchQuery.trim().length > 2) {
-            // Filter suburbs that match the search query
-            const matches = vulnerableSuburbs
-                .filter(s => s.suburb.toLowerCase().includes(searchQuery.toLowerCase()))
-                .slice(0, 5); // Limit to 5 results
+        if (searchQuery.trim().length > 1) {
+            const lowerQuery = searchQuery.toLowerCase();
+            
+            // First, check vulnerable suburbs (they have risk data)
+            let matches = vulnerableSuburbs
+                .filter(s => s.suburb.toLowerCase().includes(lowerQuery));
+            
+            // If we don't have enough matches, add from all suburbs
+            if (matches.length < 5 && allSuburbs.length > 0) {
+                const additionalMatches = allSuburbs
+                    .filter(s => s.name.toLowerCase().includes(lowerQuery))
+                    // Exclude those already in matches
+                    .filter(s => !matches.some(m => m.suburb === s.name))
+                    // Convert to format expected by components
+                    .map(s => ({ suburb: s.name }));
+                
+                matches = [...matches, ...additionalMatches].slice(0, 5);
+            }
+            
             setSearchResults(matches);
         } else {
             setSearchResults([]);
         }
-    }, [searchQuery, vulnerableSuburbs]);
+    }, [searchQuery, vulnerableSuburbs, allSuburbs]);
 
     // Handle suburb selection from search
     const handleSearchSelect = (suburb) => {
@@ -109,9 +136,9 @@ export default function Dashboard() {
                                     
                                     {searchResults.length > 0 && (
                                         <div className="absolute left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 shadow-lg z-10">
-                                            {searchResults.map((result) => (
+                                            {searchResults.map((result, index) => (
                                                 <div 
-                                                    key={result.suburb}
+                                                    key={`${result.suburb}-${index}`}
                                                     className="p-2 hover:bg-gray-100 cursor-pointer"
                                                     onClick={() => handleSearchSelect(result)}
                                                 >
