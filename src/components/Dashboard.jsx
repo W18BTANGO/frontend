@@ -15,7 +15,7 @@ import { interpolateRisks } from '@/lib/analytics';
 
 export default function Dashboard() {
     const [selectedYear, setSelectedYear] = useState(2025)
-    const [emissionsScenario, setEmissionsScenario] = useState("High")
+    const [emissionsScenario, setEmissionsScenario] = useState("low_emissions_impact")
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState([])
     const [allSuburbs, setAllSuburbs] = useState([])
@@ -40,10 +40,10 @@ export default function Dashboard() {
         if (selectedSuburb.name) {
             handleSuburbSelect(selectedSuburb.name);
         }
-    }, [selectedYear]);
+    }, [selectedYear, emissionsScenario]);
 
     const handleSuburbSelect = useCallback(async (suburbName = selectedSuburb) => {
-        const filteredData = await getDataByEventTypeAndSuburb('low_emissions_impact', suburbName);
+        const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbName);
         console.log('Filtered Data:', filteredData);
         console.log('Suburb Name:', suburbName);
 
@@ -85,7 +85,7 @@ export default function Dashboard() {
         } else {
             console.log('No data found for the selected suburb.');
         }
-    }, [selectedYear]);
+    }, [selectedYear, emissionsScenario]);
 
     // Handle search functionality
     useEffect(() => {
