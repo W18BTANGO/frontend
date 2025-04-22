@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useMemo } from "react"
+import { useState, useCallback, useEffect } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import TimelineSlider from "@/components/TimelineSlider"
@@ -15,7 +15,7 @@ import { interpolateRisks } from '@/lib/analytics';
 
 export default function Dashboard() {
     const [selectedYear, setSelectedYear] = useState(2025)
-    const [emissionsScenario, setEmissionsScenario] = useState("low_emissions_impact")
+    const [emissionsScenario, setEmissionsScenario] = useState("medium_emissions_impact")
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState([])
     const [allSuburbs, setAllSuburbs] = useState([])
