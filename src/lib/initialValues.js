@@ -1,16 +1,15 @@
 export const initialSuburb = {
-    name: "BALLINA",
+    name: "Ballina",
     risks: {
-        "Coastal Inundation": 22.8,
+        "Coastal Inundation": 2.3,
         "Extreme Wind": 0,
         "Forest Fire": 0,
         "Riverine Flooding": 98.9,
         "Surface Water Flooding": 5.4,
-        "Tropical Cyclone Wind": 0
+        "Tropical Cyclone Wind": 0,
+        "Total MVAR": 99.0
     },
-    total: 99.0,
     matchedRisk: "Riverine Flooding",
-    MVAR: 99.0,
     c: 301
 }
 

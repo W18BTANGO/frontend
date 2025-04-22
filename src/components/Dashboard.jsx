@@ -82,30 +82,20 @@ export default function Dashboard() {
 
     // Handle search functionality
     useEffect(() => {
-        if (searchQuery.trim().length > 1) {
+        if (searchQuery.trim().length > 1 && allSuburbs.length > 0) {
             const lowerQuery = searchQuery.toLowerCase();
-
-            // First, check vulnerable suburbs (they have risk data)
-            let matches = vulnerableSuburbs
-                .filter(s => s.suburb.toLowerCase().includes(lowerQuery));
-
-            // If we don't have enough matches, add from all suburbs
-            if (matches.length < 5 && allSuburbs.length > 0) {
-                const additionalMatches = allSuburbs
-                    .filter(s => s.name.toLowerCase().includes(lowerQuery))
-                    // Exclude those already in matches
-                    .filter(s => !matches.some(m => m.suburb === s.name))
-                    // Convert to format expected by components
-                    .map(s => ({ suburb: s.name }));
-
-                matches = [...matches, ...additionalMatches].slice(0, 5);
-            }
-
+            
+            // Search directly in all suburbs without prioritizing vulnerable suburbs
+            const matches = allSuburbs
+                .filter(s => s.name.toLowerCase().includes(lowerQuery))
+                .slice(0, 5)
+                .map(s => ({ suburb: s.name }));
+                
             setSearchResults(matches);
         } else {
             setSearchResults([]);
         }
-    }, [searchQuery, vulnerableSuburbs, allSuburbs]);
+    }, [searchQuery, allSuburbs]);
 
     // Handle suburb selection from search
     const handleSearchSelect = (suburb) => {

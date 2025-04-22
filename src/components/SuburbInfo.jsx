@@ -1,20 +1,13 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 export default function SuburbInfo({ suburb, selectedYear }) {
-    const [percent, setPercent] = useState(0);
-
-    useEffect(() => {
-        setPercent(suburb.MVAR)
-        console.log(suburb)
-    }, [suburb])
-
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="p-4 border-b border-gray-200">
-                <h2 className="font-semibold text-lg">{suburb.name}</h2>
+                <h2 className="font-semibold text-lg">{suburb.name.toUpperCase()}</h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    <b>{percent}%</b> of properties in <b>{suburb.name}</b> will be unaffordable or impossible to insure in <b>{selectedYear}</b>
+                    <b>{suburb.risks["Total MVAR"]}%</b> of properties in <b>{suburb.name.toUpperCase()}</b> will be unaffordable or impossible to insure in <b>{selectedYear}</b>
                 </p>
                 {suburb.matchedRisk && (
                     <p className="text-sm text-red-700 mt-1">
