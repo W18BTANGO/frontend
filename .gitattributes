@@ -8,3 +8,4 @@ public/sa_suburbs.json filter=lfs diff=lfs merge=lfs -text
 public/tasmania_suburbs.json filter=lfs diff=lfs merge=lfs -text
 public/victoria_suburbs.json filter=lfs diff=lfs merge=lfs -text
 public/wa_suburbs.json filter=lfs diff=lfs merge=lfs -text
+public/structured_data.json filter=lfs diff=lfs merge=lfs -text

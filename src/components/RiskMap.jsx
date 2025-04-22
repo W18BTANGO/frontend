@@ -164,7 +164,17 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
         
         // Update the source data
         if (map.current.getSource('suburbs')) {
-            map.current.getSource('suburbs').setData(stateData[state].file)
+            // Use fetch to load the file instead of direct reference
+            fetch(stateData[state].file)
+                .then(response => response.json())
+                .then(data => {
+                    if (map.current && map.current.getSource('suburbs')) {
+                        map.current.getSource('suburbs').setData(data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading suburb data:', err);
+                });
         }
     }
     
@@ -194,7 +204,8 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
                         minzoom: 0,
                         maxzoom: 19
                     }
-                ]
+                ],
+                glyphs: 'https://fonts.openmaptiles.org/{fontstack}/{range}.pbf'
             },
             center: stateData[selectedState].center,
             zoom: stateData[selectedState].zoom
@@ -204,8 +215,23 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
             // Add suburbs GeoJSON source
             map.current.addSource('suburbs', {
                 type: 'geojson',
-                data: stateData[selectedState].file
+                data: {
+                    type: 'FeatureCollection',
+                    features: []
+                }
             })
+
+            // Load the actual data
+            fetch(stateData[selectedState].file)
+                .then(response => response.json())
+                .then(data => {
+                    if (map.current && map.current.getSource('suburbs')) {
+                        map.current.getSource('suburbs').setData(data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error loading suburb data:', err);
+                });
 
             // Add suburb boundaries layer
             map.current.addLayer({
@@ -256,26 +282,31 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
                 : ['get', stateData[selectedState].possibleNameFields[0]];
 
             // Add suburb name labels with dynamic property lookup
-            map.current.addLayer({
-                id: 'suburb-labels',
-                type: 'symbol',
-                source: 'suburbs',
-                layout: {
-                    'text-field': textFieldExpression,
-                    'text-size': 12,
-                    'text-font': ['Open Sans Regular'],
-                    'text-allow-overlap': false,
-                    'text-ignore-placement': false,
-                    'text-optional': true,
-                    'text-max-width': 8
-                },
-                paint: {
-                    'text-color': 'rgba(0, 0, 0, 0.8)',
-                    'text-halo-color': 'rgba(255, 255, 255, 0.8)',
-                    'text-halo-width': 1
-                },
-                minzoom: 9
-            })
+            try {
+                map.current.addLayer({
+                    id: 'suburb-labels',
+                    type: 'symbol',
+                    source: 'suburbs',
+                    layout: {
+                        'text-field': textFieldExpression,
+                        'text-size': 12,
+                        'text-font': ['Open Sans Regular', 'Arial Unicode MS Regular'],
+                        'text-allow-overlap': false,
+                        'text-ignore-placement': false,
+                        'text-optional': true,
+                        'text-max-width': 8
+                    },
+                    paint: {
+                        'text-color': 'rgba(0, 0, 0, 0.8)',
+                        'text-halo-color': 'rgba(255, 255, 255, 0.8)',
+                        'text-halo-width': 1
+                    },
+                    minzoom: 9
+                });
+            } catch (error) {
+                console.warn('Unable to add text labels:', error.message);
+                // Continue map initialization even if text labels fail
+            }
 
             // Add click interaction
             map.current.on('click', 'suburb-boundaries', (e) => {
