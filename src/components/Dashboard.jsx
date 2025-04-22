@@ -63,12 +63,6 @@ export default function Dashboard() {
             // Interpolate the risks for the target year
             const interpolatedRisks = interpolateRisks(yearData, targetYear);
             console.log('Interpolated Risks:', interpolatedRisks);
-
-            // Calculate the total risk score (average of all risks)
-            const totalRisk = Math.round(
-                Object.values(interpolatedRisks).reduce((sum, value) => sum + value, 0) / Object.keys(interpolatedRisks).length
-            );
-
             // Find the highest risk
             const matchedRisk = Object.entries(interpolatedRisks).reduce((highest, [name, value]) =>
                 value > (highest.value || 0) ? { name, value } : highest, {}).name || "Unknown";
@@ -77,7 +71,6 @@ export default function Dashboard() {
             setSelectedSuburb({
                 name: suburbName,
                 risks: interpolatedRisks,
-                total: totalRisk,
                 matchedRisk: matchedRisk,
                 MVAR: interpolatedRisks["Total MVAR"],
                 c: interpolatedRisks.c,
