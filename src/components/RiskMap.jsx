@@ -4,7 +4,7 @@ import { useRef, useEffect, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
-export default function RiskMap({ onSuburbSelect }) {
+export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmissionsScenario }) {
     const mapContainer = useRef(null)
     const map = useRef(null)
     const [loaded, setLoaded] = useState(false)
@@ -316,7 +316,7 @@ export default function RiskMap({ onSuburbSelect }) {
     }, [selectedState])
 
     return (
-        <div className="md:col-span-2 bg-white rounded-lg shadow overflow-hidden h-[400px]">
+        <div className="md:col-span-2 bg-white rounded-lg shadow overflow-hidden h-full">
             <div className="p-4 border-b border-gray-200 flex justify-between items-center">
                 <h2 className="font-semibold text-lg">Climate Risk Map</h2>
                 <div className="flex space-x-2">
@@ -331,9 +331,37 @@ export default function RiskMap({ onSuburbSelect }) {
                     </select>
                 </div>
             </div>
+            
+            {/* Emissions scenario selector */}
+            <div className="absolute ml-4 mt-4 bg-white bg-opacity-90 rounded-lg shadow z-10 p-3">
+                <div className="flex flex-col">
+                    <h3 className="text-gray-700 text-xs font-medium mb-1">Emissions scenario</h3>
+                    <div className="inline-flex rounded-md border border-gray-300 overflow-hidden">
+                        <button
+                            className={`px-3 py-1 text-xs ${emissionsScenario === 'Low' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                            onClick={() => setEmissionsScenario('Low')}
+                        >
+                            Low
+                        </button>
+                        <button
+                            className={`px-3 py-1 text-xs border-l border-r border-gray-300 ${emissionsScenario === 'Medium' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                            onClick={() => setEmissionsScenario('Medium')}
+                        >
+                            Medium
+                        </button>
+                        <button
+                            className={`px-3 py-1 text-xs ${emissionsScenario === 'High' ? 'bg-gray-700 text-white' : 'bg-gray-100 text-gray-700'}`}
+                            onClick={() => setEmissionsScenario('High')}
+                        >
+                            High
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
             <div 
                 ref={mapContainer} 
-                className="h-[calc(400px-57px)] bg-gray-100"
+                className="h-[calc(100%-57px)] bg-gray-100"
             />
         </div>
     )
