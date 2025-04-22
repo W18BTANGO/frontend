@@ -226,6 +226,20 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
                 .then(response => response.json())
                 .then(data => {
                     if (map.current && map.current.getSource('suburbs')) {
+                        // Add dummy risk data for visualization
+                        const featuresWithRisk = data.features.map(feature => {
+                            // Assign a random risk value between 0 and 1 for dummy data
+                            const riskValue = Math.random();
+                            return {
+                                ...feature,
+                                properties: {
+                                    ...feature.properties,
+                                    riskValue
+                                }
+                            };
+                        });
+                        
+                        data.features = featuresWithRisk;
                         map.current.getSource('suburbs').setData(data);
                     }
                 })
@@ -233,23 +247,21 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
                     console.error('Error loading suburb data:', err);
                 });
 
-            // Add suburb boundaries layer
+            // Add suburb boundaries layer with white-to-red color scale
             map.current.addLayer({
                 id: 'suburb-boundaries',
                 type: 'fill',
                 source: 'suburbs',
                 paint: {
                     'fill-color': [
-                        'case',
-                        ['==', ['get', 'nsw_loca_5'], 'G'],
-                        'rgba(173, 216, 230, 0.4)', // Light blue for normal suburbs
-                        ['==', ['get', 'properties.risk'], 'Riverine Flooding'],
-                        'rgba(0, 0, 255, 0.4)', // Blue for flood risk
-                        ['==', ['get', 'properties.risk'], 'Forest Fire'],
-                        'rgba(255, 0, 0, 0.4)', // Red for fire risk
-                        ['==', ['get', 'properties.risk'], 'Surface Flooding'],
-                        'rgba(128, 0, 128, 0.4)', // Purple for surface flood risk
-                        'rgba(200, 200, 200, 0.3)' // Default gray
+                        'interpolate',
+                        ['linear'],
+                        ['get', 'riskValue'],
+                        0, 'rgba(255, 255, 255, 0.5)',  // White for lowest risk
+                        0.25, 'rgba(255, 220, 220, 0.5)', // Light pink
+                        0.5, 'rgba(255, 170, 170, 0.5)',  // Pink
+                        0.75, 'rgba(255, 100, 100, 0.5)', // Light red
+                        1, 'rgba(180, 0, 0, 0.7)'        // Dark red for highest risk
                     ],
                     'fill-outline-color': 'rgba(0, 0, 0, 0.2)'
                 }
@@ -314,7 +326,7 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
 
                 const feature = e.features[0]
                 const suburbName = getSuburbName(feature)
-
+                
                 // Notify parent component about selected suburb
                 if (onSuburbSelect) {
                     onSuburbSelect(suburbName)
@@ -345,6 +357,44 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
             }
         }
     }, [selectedState])
+
+    // Update colors when emissions scenario changes
+    useEffect(() => {
+        if (map.current && loaded && map.current.getSource('suburbs')) {
+            // This would be where you'd fetch new data based on emissions scenario
+            // For now, regenerate random risk values
+            fetch(stateData[selectedState].file)
+                .then(response => response.json())
+                .then(data => {
+                    if (map.current && map.current.getSource('suburbs')) {
+                        // Add dummy risk data for visualization
+                        const featuresWithRisk = data.features.map(feature => {
+                            // Adjust risk based on emission scenario for demo purposes
+                            let baseRisk = Math.random();
+                            if (emissionsScenario === 'high_emissions_impact') {
+                                baseRisk = Math.min(baseRisk * 1.3, 1); // Higher risk in high emissions
+                            } else if (emissionsScenario === 'low_emissions_impact') {
+                                baseRisk = baseRisk * 0.7; // Lower risk in low emissions
+                            }
+                            
+                            return {
+                                ...feature,
+                                properties: {
+                                    ...feature.properties,
+                                    riskValue: baseRisk
+                                }
+                            };
+                        });
+                        
+                        data.features = featuresWithRisk;
+                        map.current.getSource('suburbs').setData(data);
+                    }
+                })
+                .catch(err => {
+                    console.error('Error updating suburb data:', err);
+                });
+        }
+    }, [emissionsScenario, loaded, selectedState]);
 
     return (
         <div className="md:col-span-2 bg-white rounded-lg shadow overflow-hidden h-full">
