@@ -39,9 +39,26 @@ export const getDataByEventTypeAndSuburb = async (emissionsScenario, suburbName)
     console.log("Using event type for filtering:", eventType);
     
     const data = await fetchData();
+    
+    // Create a regex pattern that matches either:
+    // 1. The exact suburb name (case insensitive)
+    // 2. The suburb name followed by parentheses that contain a state abbreviation (with any other text)
+    const stateAbbreviations = ['NSW', 'Vic\\.', 'Qld', 'SA', 'WA', 'NT', 'Tas\\.'];
+    const statePattern = `(${stateAbbreviations.join('|')})`;
+    const exactSuburbPattern = `^${suburbName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`;
+    
+    // Updated pattern that allows any text before the state abbreviation in parentheses
+    const suburbWithStatePattern = `^${suburbName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\(.*${statePattern}.*\\)$`;
+    
+    const suburbRegex = new RegExp(`${exactSuburbPattern}|${suburbWithStatePattern}`, 'i');
+    
+    console.log("Using regex for suburb matching:", suburbRegex);
+    
     const filteredResults = data.filter(item => {
         const matchesEventType = item.event_type === eventType;
-        const matchesSuburb = item.attributes.a.toLowerCase().includes(suburbName.toLowerCase());
+        
+        // Use regex to match suburb name exactly or with state
+        const matchesSuburb = suburbRegex.test(item.attributes.a);
         
         return matchesEventType && matchesSuburb;
     });
