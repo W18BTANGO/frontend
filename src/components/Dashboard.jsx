@@ -1,46 +1,28 @@
 "use client"
 
-import { useState, useCallback, useEffect } from "react"
+import { useState, useCallback, useEffect, useMemo } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import TimelineSlider from "@/components/TimelineSlider"
 import RiskMap from "@/components/RiskMap"
 import SuburbInfo from "@/components/SuburbInfo"
 import VulnerableSuburbs from "@/components/VulnerableSuburbs"
+import { initialSuburb, initialVulnerableSuburbs } from '@/lib/initialValues'
+import { getDataByEventTypeAndSuburb } from '@/lib/preprocessing';
+import { interpolateRisks } from '@/lib/analytics';
+
+
 
 export default function Dashboard() {
     const [selectedYear, setSelectedYear] = useState(2025)
-    const [emissionsScenario, setEmissionsScenario] = useState("High")
+    const [emissionsScenario, setEmissionsScenario] = useState("low_emissions_impact")
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState([])
     const [allSuburbs, setAllSuburbs] = useState([])
-    const [selectedSuburb, setSelectedSuburb] = useState({
-        name: "Ballina",
-        risks: {
-            "Coastal Inundation": 72,
-            "Extreme Wind": 45,
-            "Forest Fire": 38,
-            "Riverine Flooding": 89,
-            "Surface Water Flooding": 65,
-            "Tropical Cyclone Wind": 51
-        },
-        total: 68, // Adding a total risk score
-        matchedRisk: "Riverine Flooding" // Adding matched risk for Ballina
-    })
+    const [selectedSuburb, setSelectedSuburb] = useState(initialSuburb)
+    const [vulnerableSuburbs, setVulnerableSuburbs] = useState(initialVulnerableSuburbs)
 
-    // Fake data for vulnerable suburbs with added risk information
-    const vulnerableSuburbs = [
-        { suburb: "Ballina", properties: 8824, percentage: 99, risk: "Riverine Flooding" },
-        { suburb: "Tweed Heads South", properties: 5280, percentage: 82.5, risk: "Riverine Flooding" },
-        { suburb: "Tweed Heads", properties: 3602, percentage: 46.2, risk: "Riverine Flooding" },
-        { suburb: "Yamba", properties: 3377, percentage: 58.7, risk: "Riverine Flooding" },
-        { suburb: "Tweed Heads West", properties: 2585, percentage: 71.5, risk: "Riverine Flooding" },
-        { suburb: "Wyoming", properties: 2334, percentage: 42.9, risk: "Forest Fire" },
-        { suburb: "Parramatta", properties: 2322, percentage: 10.2, risk: "Surface Flooding" },
-        { suburb: "Lismore", properties: 2053, percentage: 57.7, risk: "Riverine Flooding" },
-        { suburb: "Liverpool", properties: 1990, percentage: 10.4, risk: "Riverine Flooding" },
-        { suburb: "West Ballina", properties: 1953, percentage: 93.6, risk: "Riverine Flooding" }
-    ]
+
 
     // Load all suburbs data
     useEffect(() => {
@@ -54,32 +36,66 @@ export default function Dashboard() {
             });
     }, []);
 
-    // Handle suburb selection from map
-    const handleSuburbSelect = useCallback((suburbName) => {
-        // Find if the suburb exists in our vulnerable suburbs list
-        const matchedSuburb = vulnerableSuburbs.find(s => s.suburb === suburbName);
-        
-        // Update the selected suburb with the new name, keeping existing risk data for now
-        setSelectedSuburb(prev => ({
-            ...prev,
-            name: suburbName,
-            // Always set a matchedRisk - either from the matched suburb or the highest risk for this suburb
-            matchedRisk: matchedSuburb ? matchedSuburb.risk : 
-                // Find the highest risk from the risk object
-                Object.entries(prev.risks).reduce((highest, [name, value]) => 
-                    value > (highest.value || 0) ? {name, value} : highest, {}).name || "Unknown"
-        }));
-    }, [vulnerableSuburbs]);
+    useEffect(() => {
+        if (selectedSuburb.name) {
+            handleSuburbSelect(selectedSuburb.name);
+        }
+    }, [selectedYear, emissionsScenario]);
+
+    const handleSuburbSelect = useCallback(async (suburbName = selectedSuburb) => {
+        const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbName);
+        console.log('Filtered Data:', filteredData);
+        console.log('Suburb Name:', suburbName);
+
+        if (filteredData.length > 0) {
+            // Parse the selected year
+            const targetYear = selectedYear;
+
+            // Extract the years and their corresponding data
+            const yearData = filteredData.map(item => ({
+                year: new Date(item.time_object.timestamp).getUTCFullYear(),
+                attributes: item.attributes,
+            }));
+
+            // Sort the data by year (just in case it's not sorted)
+            yearData.sort((a, b) => a.year - b.year);
+
+            // Interpolate the risks for the target year
+            const interpolatedRisks = interpolateRisks(yearData, targetYear);
+            console.log('Interpolated Risks:', interpolatedRisks);
+
+            // Calculate the total risk score (average of all risks)
+            const totalRisk = Math.round(
+                Object.values(interpolatedRisks).reduce((sum, value) => sum + value, 0) / Object.keys(interpolatedRisks).length
+            );
+
+            // Find the highest risk
+            const matchedRisk = Object.entries(interpolatedRisks).reduce((highest, [name, value]) =>
+                value > (highest.value || 0) ? { name, value } : highest, {}).name || "Unknown";
+
+            // Update the selected suburb state
+            setSelectedSuburb({
+                name: suburbName,
+                risks: interpolatedRisks,
+                total: totalRisk,
+                matchedRisk: matchedRisk,
+                MVAR: interpolatedRisks["Total MVAR"],
+                c: interpolatedRisks.c,
+            });
+        } else {
+            console.log('No data found for the selected suburb.');
+        }
+    }, [selectedYear, emissionsScenario]);
 
     // Handle search functionality
     useEffect(() => {
         if (searchQuery.trim().length > 1) {
             const lowerQuery = searchQuery.toLowerCase();
-            
+
             // First, check vulnerable suburbs (they have risk data)
             let matches = vulnerableSuburbs
                 .filter(s => s.suburb.toLowerCase().includes(lowerQuery));
-            
+
             // If we don't have enough matches, add from all suburbs
             if (matches.length < 5 && allSuburbs.length > 0) {
                 const additionalMatches = allSuburbs
@@ -88,10 +104,10 @@ export default function Dashboard() {
                     .filter(s => !matches.some(m => m.suburb === s.name))
                     // Convert to format expected by components
                     .map(s => ({ suburb: s.name }));
-                
+
                 matches = [...matches, ...additionalMatches].slice(0, 5);
             }
-            
+
             setSearchResults(matches);
         } else {
             setSearchResults([]);
@@ -108,7 +124,7 @@ export default function Dashboard() {
     return (
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header />
-            
+
             <TimelineSlider selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
 
             <main className="flex-1 p-6">
@@ -116,8 +132,8 @@ export default function Dashboard() {
                     {/* Top Section: Map and Suburb Info */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:min-h-[580px]">
                         <div className="md:col-span-2 h-full">
-                            <RiskMap 
-                                onSuburbSelect={handleSuburbSelect} 
+                            <RiskMap
+                                onSuburbSelect={handleSuburbSelect}
                                 emissionsScenario={emissionsScenario}
                                 setEmissionsScenario={setEmissionsScenario}
                             />
@@ -126,18 +142,18 @@ export default function Dashboard() {
                             {/* Search feature */}
                             <div className="bg-white rounded-lg shadow p-4">
                                 <div className="relative">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search for a suburb..." 
+                                    <input
+                                        type="text"
+                                        placeholder="Search for a suburb..."
                                         className="w-full border border-gray-300 rounded-md py-2 px-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         value={searchQuery}
                                         onChange={(e) => setSearchQuery(e.target.value)}
                                     />
-                                    
+
                                     {searchResults.length > 0 && (
                                         <div className="absolute left-0 right-0 bg-white border border-gray-300 rounded-md mt-1 shadow-lg z-10">
                                             {searchResults.map((result, index) => (
-                                                <div 
+                                                <div
                                                     key={`${result.suburb}-${index}`}
                                                     className="p-2 hover:bg-gray-100 cursor-pointer"
                                                     onClick={() => handleSearchSelect(result)}
@@ -149,7 +165,7 @@ export default function Dashboard() {
                                     )}
                                 </div>
                             </div>
-                            
+
                             {/* Suburb Info */}
                             <SuburbInfo suburb={selectedSuburb} selectedYear={selectedYear} />
                         </div>
@@ -159,7 +175,7 @@ export default function Dashboard() {
                     <VulnerableSuburbs suburbs={vulnerableSuburbs} selectedYear={selectedYear} />
                 </div>
             </main>
-            
+
             <Footer />
         </div>
     )
