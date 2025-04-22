@@ -36,16 +36,11 @@ export default function Dashboard() {
             });
     }, []);
 
-    useEffect(() => {
-        if (selectedSuburb.name) {
-            handleSuburbSelect(selectedSuburb.name);
-        }
-    }, [selectedYear, emissionsScenario]);
-
-    const handleSuburbSelect = useCallback(async (suburbName = selectedSuburb) => {
-        const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbName);
+    const handleSuburbSelect = useCallback(async (suburbName) => {
+        const suburbToUse = typeof suburbName === 'string' ? suburbName : selectedSuburb.name;
+        const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbToUse);
         console.log('Filtered Data:', filteredData);
-        console.log('Suburb Name:', suburbName);
+        console.log('Suburb Name:', suburbToUse);
 
         if (filteredData.length > 0) {
             // Parse the selected year
@@ -69,7 +64,7 @@ export default function Dashboard() {
 
             // Update the selected suburb state
             setSelectedSuburb({
-                name: suburbName,
+                name: suburbToUse,
                 risks: interpolatedRisks,
                 matchedRisk: matchedRisk,
                 MVAR: interpolatedRisks["Total MVAR"],
@@ -78,7 +73,13 @@ export default function Dashboard() {
         } else {
             console.log('No data found for the selected suburb.');
         }
-    }, [selectedYear, emissionsScenario]);
+    }, [selectedYear, emissionsScenario, selectedSuburb.name]);
+
+    useEffect(() => {
+        if (selectedSuburb.name) {
+            handleSuburbSelect(selectedSuburb.name);
+        }
+    }, [selectedYear, emissionsScenario, handleSuburbSelect]);
 
     // Handle search functionality
     useEffect(() => {
