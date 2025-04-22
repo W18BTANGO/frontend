@@ -2,6 +2,7 @@
 
 export default function TimelineSlider({ selectedYear, setSelectedYear }) {
     const handleYearChange = (e) => {
+        console.log("Year changed to:", e.target.value)
         setSelectedYear(parseInt(e.target.value))
     }
 
