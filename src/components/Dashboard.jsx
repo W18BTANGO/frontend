@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useEffect, useMemo } from "react"
+import { useState, useCallback, useEffect } from "react"
 import Header from "@/components/Header"
 import Footer from "@/components/Footer"
 import TimelineSlider from "@/components/TimelineSlider"
@@ -15,7 +15,7 @@ import { interpolateRisks } from '@/lib/analytics';
 
 export default function Dashboard() {
     const [selectedYear, setSelectedYear] = useState(2025)
-    const [emissionsScenario, setEmissionsScenario] = useState("low_emissions_impact")
+    const [emissionsScenario, setEmissionsScenario] = useState("medium_emissions_impact")
     const [searchQuery, setSearchQuery] = useState("")
     const [searchResults, setSearchResults] = useState([])
     const [allSuburbs, setAllSuburbs] = useState([])
@@ -36,16 +36,12 @@ export default function Dashboard() {
             });
     }, []);
 
-    useEffect(() => {
-        if (selectedSuburb.name) {
-            handleSuburbSelect(selectedSuburb.name);
-        }
-    }, [selectedYear, emissionsScenario]);
-
-    const handleSuburbSelect = useCallback(async (suburbName = selectedSuburb) => {
-        const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbName);
+    const handleSuburbSelect = useCallback(async (suburbName) => {
+        const suburbToUse = typeof suburbName === 'string' ? suburbName : selectedSuburb.name;
+        console.log('Current emissions scenario:', emissionsScenario);
+        const filteredData = await getDataByEventTypeAndSuburb(emissionsScenario, suburbToUse);
         console.log('Filtered Data:', filteredData);
-        console.log('Suburb Name:', suburbName);
+        console.log('Suburb Name:', suburbToUse);
 
         if (filteredData.length > 0) {
             // Parse the selected year
@@ -63,21 +59,17 @@ export default function Dashboard() {
             // Interpolate the risks for the target year
             const interpolatedRisks = interpolateRisks(yearData, targetYear);
             console.log('Interpolated Risks:', interpolatedRisks);
-
-            // Calculate the total risk score (average of all risks)
-            const totalRisk = Math.round(
-                Object.values(interpolatedRisks).reduce((sum, value) => sum + value, 0) / Object.keys(interpolatedRisks).length
-            );
-
-            // Find the highest risk
-            const matchedRisk = Object.entries(interpolatedRisks).reduce((highest, [name, value]) =>
-                value > (highest.value || 0) ? { name, value } : highest, {}).name || "Unknown";
+            
+            // Find the highest risk, excluding "Total MVAR"
+            const matchedRisk = Object.entries(interpolatedRisks)
+                .filter(([name]) => name !== "Total MVAR") // Exclude Total MVAR
+                .reduce((highest, [name, value]) =>
+                    value > (highest.value || 0) ? { name, value } : highest, {}).name || "Unknown";
 
             // Update the selected suburb state
             setSelectedSuburb({
-                name: suburbName,
+                name: suburbToUse,
                 risks: interpolatedRisks,
-                total: totalRisk,
                 matchedRisk: matchedRisk,
                 MVAR: interpolatedRisks["Total MVAR"],
                 c: interpolatedRisks.c,
@@ -85,34 +77,30 @@ export default function Dashboard() {
         } else {
             console.log('No data found for the selected suburb.');
         }
-    }, [selectedYear, emissionsScenario]);
+    }, [selectedYear, emissionsScenario, selectedSuburb.name]);
+
+    useEffect(() => {
+        if (selectedSuburb.name) {
+            handleSuburbSelect(selectedSuburb.name);
+        }
+    }, [selectedYear, emissionsScenario, handleSuburbSelect]);
 
     // Handle search functionality
     useEffect(() => {
-        if (searchQuery.trim().length > 1) {
+        if (searchQuery.trim().length > 1 && allSuburbs.length > 0) {
             const lowerQuery = searchQuery.toLowerCase();
-
-            // First, check vulnerable suburbs (they have risk data)
-            let matches = vulnerableSuburbs
-                .filter(s => s.suburb.toLowerCase().includes(lowerQuery));
-
-            // If we don't have enough matches, add from all suburbs
-            if (matches.length < 5 && allSuburbs.length > 0) {
-                const additionalMatches = allSuburbs
-                    .filter(s => s.name.toLowerCase().includes(lowerQuery))
-                    // Exclude those already in matches
-                    .filter(s => !matches.some(m => m.suburb === s.name))
-                    // Convert to format expected by components
-                    .map(s => ({ suburb: s.name }));
-
-                matches = [...matches, ...additionalMatches].slice(0, 5);
-            }
-
+            
+            // Search directly in all suburbs without prioritizing vulnerable suburbs
+            const matches = allSuburbs
+                .filter(s => s.name.toLowerCase().includes(lowerQuery))
+                .slice(0, 5)
+                .map(s => ({ suburb: s.name }));
+                
             setSearchResults(matches);
         } else {
             setSearchResults([]);
         }
-    }, [searchQuery, vulnerableSuburbs, allSuburbs]);
+    }, [searchQuery, allSuburbs]);
 
     // Handle suburb selection from search
     const handleSearchSelect = (suburb) => {

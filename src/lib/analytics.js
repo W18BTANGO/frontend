@@ -2,7 +2,7 @@
  * Interpolates risk values for a specific year based on known data points.
  * @param {Array} yearData - Array of objects containing year and attributes.
  * @param {number} targetYear - The year to interpolate for.
- * @returns {Object} - Interpolated risk values.
+ * @returns {Object} - Interpolated risk values with 1 decimal place precision.
  */
 export function interpolateRisks(yearData, targetYear) {
     const risks = Object.keys(yearData[0].attributes).filter(key => key !== "a" && key !== "bbox" && key !== "c");
@@ -28,11 +28,11 @@ export function interpolateRisks(yearData, targetYear) {
 
         // Perform linear interpolation
         if (lower.year === upper.year) {
-            interpolated[risk] = Math.round(lower.attributes[risk] * 100); // Scale to percentage
+            interpolated[risk] = parseFloat((lower.attributes[risk] * 100).toFixed(1)); // Scale to percentage with 1 decimal
         } else {
             const slope = (upper.attributes[risk] - lower.attributes[risk]) / (upper.year - lower.year);
             const interpolatedValue = lower.attributes[risk] + slope * (targetYear - lower.year);
-            interpolated[risk] = Math.round(interpolatedValue * 100); // Scale to percentage
+            interpolated[risk] = parseFloat((interpolatedValue * 100).toFixed(1)); // Scale to percentage with 1 decimal
         }
     });
 

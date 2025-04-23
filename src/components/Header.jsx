@@ -14,7 +14,7 @@ export default function Header({ toggleSidePopup }) {
                     </Button>
                     <div className="flex items-center gap-2">
                         <Map className="h-6 w-6" />
-                        <h1 className="text-xl font-bold">MapDashboard</h1>
+                        <h1 className="text-xl font-bold">Safe Haven</h1>
                     </div>
                 </div>
 

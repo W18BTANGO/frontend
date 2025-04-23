@@ -17,7 +17,7 @@ export default function TimelineSlider({ selectedYear, setSelectedYear }) {
                     <input
                         type="range"
                         min="2025"
-                        max="2200"
+                        max="2100"
                         step="1"
                         value={selectedYear}
                         onChange={handleYearChange}
@@ -25,7 +25,7 @@ export default function TimelineSlider({ selectedYear, setSelectedYear }) {
                     />
                     <div className="flex justify-between text-xs text-gray-500">
                         <span>2025</span>
-                        <span>2200</span>
+                        <span>2100</span>
                     </div>
                 </div>
             </div>

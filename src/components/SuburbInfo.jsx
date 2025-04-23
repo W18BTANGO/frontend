@@ -1,19 +1,13 @@
 "use client"
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 
 export default function SuburbInfo({ suburb, selectedYear }) {
-    const [percent, setPercent] = useState(0);
-
-    useEffect(() => {
-        setPercent(suburb.MVAR * 100)
-    }, [suburb])
-
     return (
         <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="p-4 border-b border-gray-200">
-                <h2 className="font-semibold text-lg">{suburb.name}</h2>
+                <h2 className="font-semibold text-lg">{suburb.name.toUpperCase()}</h2>
                 <p className="text-sm text-gray-500 mb-4">
-                    <b>{percent}%</b> of properties in <b>{suburb.name}</b> will be unaffordable or impossible to insure in <b>{selectedYear}</b>
+                    <b>{suburb.risks["Total MVAR"]}%</b> of properties in <b>{suburb.name.toUpperCase()}</b> will be unaffordable or impossible to insure in <b>{selectedYear}</b>
                 </p>
                 {suburb.matchedRisk && (
                     <p className="text-sm text-red-700 mt-1">
@@ -22,38 +16,19 @@ export default function SuburbInfo({ suburb, selectedYear }) {
                 )}
             </div>
             <div className="p-4 space-y-4">
-                {/* Total risk score */}
-                <div>
-                    <div className="flex justify-between mb-1">
-                        <span className="text-sm font-bold">Total</span>
-                        <span className="text-sm font-bold">{suburb.total ||
-                            Math.round(Object.values(suburb.risks).reduce((sum, score) => sum + score, 0) /
-                                Object.values(suburb.risks).length)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2.5 mb-3">
-                        <div
-                            className={`h-2.5 rounded-full ${(suburb.total || Math.round(Object.values(suburb.risks).reduce((sum, score) => sum + score, 0) /
-                                Object.values(suburb.risks).length)) > 75 ? 'bg-red-500' :
-                                (suburb.total || Math.round(Object.values(suburb.risks).reduce((sum, score) => sum + score, 0) /
-                                    Object.values(suburb.risks).length)) > 50 ? 'bg-orange-500' :
-                                    (suburb.total || Math.round(Object.values(suburb.risks).reduce((sum, score) => sum + score, 0) /
-                                        Object.values(suburb.risks).length)) > 25 ? 'bg-yellow-500' : 'bg-green-500'
-                                }`}
-                            style={{
-                                width: `${suburb.total ||
-                                    Math.round(Object.values(suburb.risks).reduce((sum, score) => sum + score, 0) /
-                                        Object.values(suburb.risks).length)}%`
-                            }}
-                        ></div>
-                    </div>
-                </div>
 
-                {/* Individual risk factors */}
-                {Object.entries(suburb.risks).map(([riskType, score]) => (
+                {/* Individual risk factors (excluding Total MVAR) */}
+                {Object.entries(suburb.risks)
+                    .filter(([riskType]) => riskType !== "Total MVAR")
+                    .map(([riskType, score]) => (
                     <div key={riskType}>
                         <div className="flex justify-between mb-1">
-                            <span className="text-sm font-medium">{riskType}</span>
-                            <span className="text-sm font-medium">{score}%</span>
+                            <span className="text-sm font-medium">
+                                {riskType}
+                            </span>
+                            <span className="text-sm font-medium text-gray-500">
+                                {score}%
+                            </span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-2">
                             <div
@@ -66,7 +41,31 @@ export default function SuburbInfo({ suburb, selectedYear }) {
                         </div>
                     </div>
                 ))}
+                
+                {/* Total risk factor (separate) */}
+                {suburb.risks["Total MVAR"] !== undefined && (
+                    <div>
+                        <div className="flex justify-between mb-1">
+                            <span className="text-sm font-extrabold">
+                                Total Risk
+                            </span>
+                            <span className="text-sm font-bold">
+                                {suburb.risks["Total MVAR"]}%
+                            </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div
+                                className={`h-2 rounded-full ${suburb.risks["Total MVAR"] > 75 ? 'bg-red-500' :
+                                    suburb.risks["Total MVAR"] > 50 ? 'bg-orange-500' :
+                                        suburb.risks["Total MVAR"] > 25 ? 'bg-yellow-500' : 'bg-green-500'
+                                    }`}
+                                style={{ width: `${suburb.risks["Total MVAR"]}%` }}
+                            ></div>
+                        </div>
+                    </div>
+                )}
             </div>
+            <div className="pb-2"></div>
         </div>
     )
 } 

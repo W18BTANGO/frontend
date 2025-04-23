@@ -4,11 +4,161 @@ import { useRef, useEffect, useState } from 'react'
 import maplibregl from 'maplibre-gl'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
+/**
+ * Fetches all color data from the map_colours.json file.
+ * @returns {Promise<Object>} - A promise that resolves to the colors data object.
+ */
+const fetchMapColors = async () => {
+    try {
+        const response = await fetch('/map_colours.json');
+        if (!response.ok) {
+            throw new Error(`Failed to fetch map colors: ${response.statusText}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error("Error fetching map colors:", error);
+        return {}; // Return an empty object as a fallback
+    }
+};
+
 export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmissionsScenario }) {
     const mapContainer = useRef(null)
     const map = useRef(null)
     const [loaded, setLoaded] = useState(false)
     const [selectedState, setSelectedState] = useState('nsw')
+    const [mapColors, setMapColors] = useState(null)
+
+    // Function to escape regex special characters
+    const escapeRegExp = (string) => {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    // Function to get color for a suburb
+    const getSuburbColor = (suburbName) => {
+        if (!mapColors) {
+            console.log("Map colors not loaded yet");
+            return "rgba(255, 255, 255, 0.5)"; // Default white if data not loaded
+        }
+        
+        // Direct match first (fastest)
+        if (mapColors[suburbName]) {
+            return mapColors[suburbName];
+        }
+        
+        // Exact matching using regex
+        // Escape any special regex characters in the suburb name
+        const escapedSuburbName = escapeRegExp(suburbName);
+        
+        // Create regex patterns 
+        // First try exact match
+        const exactMatchRegex = new RegExp(`^${escapedSuburbName}$`, 'i');
+        
+        // Also try with state designation variations
+        const stateAbbreviations = ['NSW', 'Vic\\.', 'Qld', 'SA', 'WA', 'NT', 'Tas\\.', 'ACT'];
+        const statePatterns = stateAbbreviations.map(abbr => 
+            new RegExp(`^${escapedSuburbName}\\s*\\(.*${abbr}.*\\)$`, 'i')
+        );
+        
+        // Clean the suburb name (remove state designations) for simpler matching
+        const cleanSuburbName = suburbName
+            .replace(/\s*\([^)]+\)\s*$/, '')  // Remove parenthetical state
+            .replace(/,\s*[A-Z]{2,3}$/, '');  // Remove comma-separated state code
+            
+        const cleanEscapedName = escapeRegExp(cleanSuburbName);
+        const cleanExactRegex = new RegExp(`^${cleanEscapedName}$`, 'i');
+        
+        // Try to find a match using the regex patterns
+        for (const key in mapColors) {
+            // Try exact match first
+            if (exactMatchRegex.test(key)) {
+                return mapColors[key];
+            }
+            
+            // Try with state patterns
+            for (const stateRegex of statePatterns) {
+                if (stateRegex.test(key)) {
+                    return mapColors[key];
+                }
+            }
+            
+            // Try with cleaned name
+            if (cleanExactRegex.test(key)) {
+                return mapColors[key];
+            }
+        }
+        
+        // If still no match, try case-insensitive direct comparison
+        for (const key in mapColors) {
+            if (key.toLowerCase() === suburbName.toLowerCase()) {
+                return mapColors[key];
+            }
+            
+            if (key.toLowerCase() === cleanSuburbName.toLowerCase()) {
+                return mapColors[key];
+            }
+        }
+        
+        // Last resort: try a partial match approach
+        const partialRegex = new RegExp(cleanEscapedName, 'i');
+        for (const key in mapColors) {
+            if (partialRegex.test(key)) {
+                return mapColors[key];
+            }
+        }
+        
+        // Log missing suburbs for debugging
+        console.log(`No color found for suburb: "${suburbName}"`);
+        return "rgba(255, 255, 255, 0.5)"; // Default white
+    }
+
+    // Load map colors data 
+    useEffect(() => {
+        let isMounted = true;
+        
+        const loadMapColors = async () => {
+            try {
+                console.log("Fetching map colors...");
+                const colors = await fetchMapColors();
+                
+                if (!isMounted) return;
+                
+                // Log some information about the data for debugging
+                const count = Object.keys(colors).length;
+                console.log(`Loaded colors for ${count} suburbs`);
+                
+                // Sample some entries
+                const sampleKeys = Object.keys(colors).slice(0, 5);
+                console.log("Sample entries:", sampleKeys.map(key => ({
+                    suburb: key,
+                    color: colors[key]
+                })));
+                
+                setMapColors(colors);
+                
+                // Force update colors if map is already loaded
+                if (map.current && map.current.getSource('suburbs')) {
+                    try {
+                        const response = await fetch(stateData[selectedState].file);
+                        if (!response.ok) {
+                            throw new Error(`Failed to fetch suburbs: ${response.statusText}`);
+                        }
+                        const geoData = await response.json();
+                        updateSuburbColors(geoData, colors);
+                    } catch (error) {
+                        console.error("Error updating colors after load:", error);
+                    }
+                }
+            } catch (error) {
+                console.error("Error in loadMapColors:", error);
+            }
+        };
+        
+        loadMapColors();
+        
+        return () => {
+            isMounted = false;
+        };
+    }, []);
 
     const stateData = {
         nsw: {
@@ -166,16 +316,87 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
         if (map.current.getSource('suburbs')) {
             // Use fetch to load the file instead of direct reference
             fetch(stateData[state].file)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch suburbs: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (map.current && map.current.getSource('suburbs')) {
                         map.current.getSource('suburbs').setData(data);
+                        
+                        // Update suburb colors based on the data
+                        if (mapColors) {
+                            updateSuburbColors(data, mapColors);
+                        }
                     }
                 })
                 .catch(err => {
                     console.error('Error loading suburb data:', err);
                 });
         }
+    }
+
+    // Function to update suburb colors
+    const updateSuburbColors = (geojsonData, colors = mapColors) => {
+        if (!map.current) {
+            console.log("Map not initialized yet");
+            return;
+        }
+        
+        if (!colors) {
+            console.log("Map colors not loaded yet, can't update colors");
+            return;
+        }
+
+        console.log("Updating suburb colors");
+
+        // Count how many suburbs we're coloring
+        let coloredCount = 0;
+        let totalCount = 0;
+        let distinctColors = new Set();
+        
+        const featuresWithColors = geojsonData.features.map(feature => {
+            totalCount++;
+            const suburbName = getSuburbName(feature);
+            const color = getSuburbColor(suburbName);
+            
+            distinctColors.add(color);
+            if (color !== "rgba(255, 255, 255, 0.5)") {
+                coloredCount++;
+            }
+            
+            return {
+                ...feature,
+                properties: {
+                    ...feature.properties,
+                    suburbColor: color,
+                    suburbName: suburbName // Store the name for debugging
+                }
+            };
+        });
+        
+        console.log(`Colored ${coloredCount} out of ${totalCount} suburbs`);
+        console.log(`Using ${distinctColors.size} distinct colors`);
+        
+        // Log some sample features for debugging
+        if (featuresWithColors.length > 0) {
+            console.log("First 3 suburbs:");
+            for (let i = 0; i < Math.min(3, featuresWithColors.length); i++) {
+                const feature = featuresWithColors[i];
+                console.log(`${feature.properties.suburbName}: ${feature.properties.suburbColor}`);
+            }
+        }
+        
+        geojsonData.features = featuresWithColors;
+        
+        if (!map.current.getSource('suburbs')) {
+            console.error("Source 'suburbs' not found on map");
+            return;
+        }
+        
+        map.current.getSource('suburbs').setData(geojsonData);
     }
 
     useEffect(() => {
@@ -223,34 +444,33 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
 
             // Load the actual data
             fetch(stateData[selectedState].file)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to fetch suburbs: ${response.statusText}`);
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (map.current && map.current.getSource('suburbs')) {
                         map.current.getSource('suburbs').setData(data);
+                        
+                        // If mapColors is loaded, update the colors
+                        if (mapColors) {
+                            updateSuburbColors(data);
+                        }
                     }
                 })
                 .catch(err => {
                     console.error('Error loading suburb data:', err);
                 });
 
-            // Add suburb boundaries layer
+            // Add suburb boundaries layer with coloring from map_colours.json
             map.current.addLayer({
                 id: 'suburb-boundaries',
                 type: 'fill',
                 source: 'suburbs',
                 paint: {
-                    'fill-color': [
-                        'case',
-                        ['==', ['get', 'nsw_loca_5'], 'G'],
-                        'rgba(173, 216, 230, 0.4)', // Light blue for normal suburbs
-                        ['==', ['get', 'properties.risk'], 'Riverine Flooding'],
-                        'rgba(0, 0, 255, 0.4)', // Blue for flood risk
-                        ['==', ['get', 'properties.risk'], 'Forest Fire'],
-                        'rgba(255, 0, 0, 0.4)', // Red for fire risk
-                        ['==', ['get', 'properties.risk'], 'Surface Flooding'],
-                        'rgba(128, 0, 128, 0.4)', // Purple for surface flood risk
-                        'rgba(200, 200, 200, 0.3)' // Default gray
-                    ],
+                    'fill-color': ['get', 'suburbColor'],
                     'fill-outline-color': 'rgba(0, 0, 0, 0.2)'
                 }
             })
@@ -314,7 +534,7 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
 
                 const feature = e.features[0]
                 const suburbName = getSuburbName(feature)
-
+                
                 // Notify parent component about selected suburb
                 if (onSuburbSelect) {
                     onSuburbSelect(suburbName)
@@ -344,7 +564,15 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
                 map.current = null
             }
         }
-    }, [selectedState])
+    }, [selectedState, mapColors])
+
+    // Update emissions scenario effect - don't remove this, but keep it empty
+    // This will ensure the emissions scenario is properly passed to the parent
+    useEffect(() => {
+        console.log(`Emissions scenario changed to: ${emissionsScenario}`);
+        // We're not changing colors based on emissions scenario anymore,
+        // but we're keeping this effect for future functionality
+    }, [emissionsScenario]);
 
     return (
         <div className="md:col-span-2 bg-white rounded-lg shadow overflow-hidden h-full">
