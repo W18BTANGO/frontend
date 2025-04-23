@@ -7,7 +7,7 @@ import TimelineSlider from "@/components/TimelineSlider"
 import RiskMap from "@/components/RiskMap"
 import SuburbInfo from "@/components/SuburbInfo"
 import VulnerableSuburbs from "@/components/VulnerableSuburbs"
-import { initialSuburb, initialVulnerableSuburbs } from '@/lib/initialValues'
+import { initialSuburb } from '@/lib/initialValues'
 import { getDataByEventTypeAndSuburb } from '@/lib/preprocessing';
 import { interpolateRisks } from '@/lib/analytics';
 
@@ -20,9 +20,17 @@ export default function Dashboard() {
     const [searchResults, setSearchResults] = useState([])
     const [allSuburbs, setAllSuburbs] = useState([])
     const [selectedSuburb, setSelectedSuburb] = useState(initialSuburb)
-    const [vulnerableSuburbs, setVulnerableSuburbs] = useState(initialVulnerableSuburbs)
 
+    // Add effect to log when selectedYear changes
+    useEffect(() => {
+        console.log("Dashboard - selectedYear changed to:", selectedYear);
+    }, [selectedYear]);
 
+    // Custom year setter to ensure the value is properly updated and logged
+    const handleYearChange = useCallback((year) => {
+        console.log("Setting new year:", year);
+        setSelectedYear(year);
+    }, []);
 
     // Load all suburbs data
     useEffect(() => {
@@ -113,7 +121,10 @@ export default function Dashboard() {
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header />
 
-            <TimelineSlider selectedYear={selectedYear} setSelectedYear={setSelectedYear} />
+            <TimelineSlider 
+                selectedYear={selectedYear} 
+                setSelectedYear={handleYearChange} 
+            />
 
             <main className="flex-1 p-6">
                 <div className="max-w-7xl mx-auto space-y-6">
@@ -160,7 +171,7 @@ export default function Dashboard() {
                     </div>
 
                     {/* Bottom Section: Vulnerable Suburbs Rankings */}
-                    <VulnerableSuburbs suburbs={vulnerableSuburbs} selectedYear={selectedYear} />
+                    <VulnerableSuburbs selectedYear={selectedYear} />
                 </div>
             </main>
 
