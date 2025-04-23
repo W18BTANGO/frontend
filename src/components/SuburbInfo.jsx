@@ -119,6 +119,8 @@ export default function SuburbInfo({ suburb, selectedYear }) {
                 >
                     {loading ? 'Loading...' : 'How can I climate proof?'}
                 </button>
+                {/* Commented out the text box, copy, and clear buttons */}
+                {/*
                 <div className="mt-4">
                     <textarea
                         ref={summaryRef}
@@ -141,6 +143,7 @@ export default function SuburbInfo({ suburb, selectedYear }) {
                         </button>
                     </div>
                 </div>
+                */}
                 {error && (
                     <div className="mt-4 p-4 bg-red-100 text-red-700 rounded-lg">
                         <p className="text-sm">{error}</p>
