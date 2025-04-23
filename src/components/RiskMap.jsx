@@ -27,15 +27,6 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
     const [loaded, setLoaded] = useState(false)
     const [selectedState, setSelectedState] = useState('nsw')
     const [mapColors, setMapColors] = useState(null)
-    const [selectedYear, setSelectedYear] = useState(2025)
-
-    // Function to determine the closest year
-    const getClosestYear = (year) => {
-        const availableYears = [2025, 2050, 2100];
-        return availableYears.reduce((prev, curr) => {
-            return (Math.abs(curr - year) < Math.abs(prev - year) ? curr : prev);
-        });
-    }
 
     // Function to escape regex special characters
     const escapeRegExp = (string) => {
@@ -43,28 +34,22 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
     }
 
     // Function to get color for a suburb
-    const getSuburbColor = (suburbName, year) => {
+    const getSuburbColor = (suburbName) => {
         if (!mapColors) {
             console.log("Map colors not loaded yet");
             return "rgba(255, 255, 255, 0.5)"; // Default white if data not loaded
         }
         
-        const closestYear = getClosestYear(year);
-        if (!mapColors[closestYear]) {
-            console.log(`No data for year ${closestYear}`);
-            return "rgba(255, 255, 255, 0.5)";
-        }
-        
         // Direct match first (fastest)
-        if (mapColors[closestYear][suburbName]) {
-            return mapColors[closestYear][suburbName];
+        if (mapColors[suburbName]) {
+            return mapColors[suburbName];
         }
         
-        // Exact matching using the same approach as preprocessing.js
+        // Exact matching using regex
         // Escape any special regex characters in the suburb name
         const escapedSuburbName = escapeRegExp(suburbName);
         
-        // Create regex patterns similar to preprocessing.js
+        // Create regex patterns 
         // First try exact match
         const exactMatchRegex = new RegExp(`^${escapedSuburbName}$`, 'i');
         
@@ -82,63 +67,51 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
         const cleanEscapedName = escapeRegExp(cleanSuburbName);
         const cleanExactRegex = new RegExp(`^${cleanEscapedName}$`, 'i');
         
-        // Log for debugging
-        console.log(`Looking for suburb: "${suburbName}" in year ${closestYear}`);
-        console.log(`Cleaned suburb name: "${cleanSuburbName}"`);
-        
         // Try to find a match using the regex patterns
-        const yearData = mapColors[closestYear];
-        for (const key in yearData) {
+        for (const key in mapColors) {
             // Try exact match first
             if (exactMatchRegex.test(key)) {
-                console.log(`Found exact match: "${key}"`);
-                return yearData[key];
+                return mapColors[key];
             }
             
             // Try with state patterns
             for (const stateRegex of statePatterns) {
                 if (stateRegex.test(key)) {
-                    console.log(`Found match with state pattern: "${key}"`);
-                    return yearData[key];
+                    return mapColors[key];
                 }
             }
             
             // Try with cleaned name
             if (cleanExactRegex.test(key)) {
-                console.log(`Found match with cleaned name: "${key}"`);
-                return yearData[key];
+                return mapColors[key];
             }
         }
         
         // If still no match, try case-insensitive direct comparison
-        for (const key in yearData) {
+        for (const key in mapColors) {
             if (key.toLowerCase() === suburbName.toLowerCase()) {
-                console.log(`Found case-insensitive match: "${key}"`);
-                return yearData[key];
+                return mapColors[key];
             }
             
             if (key.toLowerCase() === cleanSuburbName.toLowerCase()) {
-                console.log(`Found case-insensitive match with cleaned name: "${key}"`);
-                return yearData[key];
+                return mapColors[key];
             }
         }
         
         // Last resort: try a partial match approach
-        // This is different from preprocessing.js but may help with suburb naming differences
         const partialRegex = new RegExp(cleanEscapedName, 'i');
-        for (const key in yearData) {
+        for (const key in mapColors) {
             if (partialRegex.test(key)) {
-                console.log(`Found partial match: "${key}" for "${suburbName}"`);
-                return yearData[key];
+                return mapColors[key];
             }
         }
         
         // Log missing suburbs for debugging
-        console.log(`No color found for suburb: "${suburbName}" in year ${closestYear}`);
+        console.log(`No color found for suburb: "${suburbName}"`);
         return "rgba(255, 255, 255, 0.5)"; // Default white
     }
 
-    // Load map colors data using the same pattern as preprocessing.js
+    // Load map colors data 
     useEffect(() => {
         let isMounted = true;
         
@@ -150,17 +123,15 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
                 if (!isMounted) return;
                 
                 // Log some information about the data for debugging
-                if (colors["2025"]) {
-                    const count = Object.keys(colors["2025"]).length;
-                    console.log(`Loaded colors for ${count} suburbs for 2025`);
-                    
-                    // Sample some entries
-                    const sampleKeys = Object.keys(colors["2025"]).slice(0, 5);
-                    console.log("Sample entries:", sampleKeys.map(key => ({
-                        suburb: key,
-                        color: colors["2025"][key]
-                    })));
-                }
+                const count = Object.keys(colors).length;
+                console.log(`Loaded colors for ${count} suburbs`);
+                
+                // Sample some entries
+                const sampleKeys = Object.keys(colors).slice(0, 5);
+                console.log("Sample entries:", sampleKeys.map(key => ({
+                    suburb: key,
+                    color: colors[key]
+                })));
                 
                 setMapColors(colors);
                 
@@ -379,8 +350,7 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
             return;
         }
 
-        const closestYear = getClosestYear(selectedYear);
-        console.log(`Updating colors using data for year: ${closestYear}`);
+        console.log("Updating suburb colors");
 
         // Count how many suburbs we're coloring
         let coloredCount = 0;
@@ -390,7 +360,7 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
         const featuresWithColors = geojsonData.features.map(feature => {
             totalCount++;
             const suburbName = getSuburbName(feature);
-            const color = getSuburbColor(suburbName, selectedYear);
+            const color = getSuburbColor(suburbName);
             
             distinctColors.add(color);
             if (color !== "rgba(255, 255, 255, 0.5)") {
@@ -596,58 +566,13 @@ export default function RiskMap({ onSuburbSelect, emissionsScenario, setEmission
         }
     }, [selectedState, mapColors])
 
-    // Update colors when emissions scenario or year changes
+    // Update emissions scenario effect - don't remove this, but keep it empty
+    // This will ensure the emissions scenario is properly passed to the parent
     useEffect(() => {
-        if (!mapColors) {
-            console.log("Map colors not loaded yet, skipping update");
-            return;
-        }
-        
-        if (!map.current || !loaded) {
-            console.log("Map not loaded yet, skipping update");
-            return;
-        }
-        
-        if (!map.current.getSource('suburbs')) {
-            console.log("Source 'suburbs' not found, skipping update");
-            return;
-        }
-        
-        console.log(`Updating colors due to emissions scenario change to: ${emissionsScenario}`);
-        console.log(`Selected year is now: ${selectedYear}`);
-
-        fetch(stateData[selectedState].file)
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`Network response was not ok: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                if (map.current && map.current.getSource('suburbs')) {
-                    updateSuburbColors(data);
-                }
-            })
-            .catch(err => {
-                console.error('Error updating suburb data:', err);
-            });
-    }, [emissionsScenario, loaded, selectedState, selectedYear, mapColors]);
-
-    // Update selected year when the parent component's year changes
-    useEffect(() => {
-        // Map emissions scenario to appropriate year
-        let year = 2025;
-        if (emissionsScenario === 'high_emissions_impact') {
-            year = 2100;
-        } else if (emissionsScenario === 'medium_emissions_impact') {
-            year = 2050;
-        }
-        
-        if (year !== selectedYear) {
-            console.log(`Updating year based on emissions scenario: ${year}`);
-            setSelectedYear(year);
-        }
-    }, [emissionsScenario, selectedYear]);
+        console.log(`Emissions scenario changed to: ${emissionsScenario}`);
+        // We're not changing colors based on emissions scenario anymore,
+        // but we're keeping this effect for future functionality
+    }, [emissionsScenario]);
 
     return (
         <div className="md:col-span-2 bg-white rounded-lg shadow overflow-hidden h-full">
