@@ -12,7 +12,7 @@ export default function VulnerableSuburbs({ selectedYear }) {
     useEffect(() => {
         console.log("Fetching entire dataset");
         setIsLoading(true);
-        
+
         fetch('/mvar_predictions_100.json')
             .then(response => response.json())
             .then(data => {
@@ -29,22 +29,22 @@ export default function VulnerableSuburbs({ selectedYear }) {
     // Update the display when either the dataset or selectedYear changes
     useEffect(() => {
         console.log("Updating display for year:", selectedYear);
-        
+
         if (!allData) {
             console.log("No data available yet");
             return;
         }
-        
+
         const yearStr = selectedYear.toString();
         const yearData = allData[yearStr] || [];
         console.log(`Found ${yearData.length} suburbs for year ${yearStr}`);
-        
+
         setSuburbs(yearData);
-        
+
         // Calculate total properties at risk
         const totalPropertiesAtRisk = yearData.reduce((sum, suburb) => sum + suburb.impact, 0);
         setTotalProperties(Math.round(totalPropertiesAtRisk));
-        
+
     }, [allData, selectedYear]);
 
     if (isLoading) {
@@ -91,12 +91,11 @@ export default function VulnerableSuburbs({ selectedYear }) {
                                     {(suburb.mvar * 100).toFixed(1)}%
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <span className={`px-2 py-1 rounded text-white ${
-                                        suburb.biggest_risk.type === "Riverine Flooding" ? "bg-blue-600" : 
-                                        suburb.biggest_risk.type === "Forest Fire" ? "bg-red-700" : 
-                                        suburb.biggest_risk.type === "Surface Water Flooding" ? "bg-purple-600" : 
-                                        suburb.biggest_risk.type === "Coastal Inundation" ? "bg-yellow-600" : "bg-gray-600"
-                                    }`}>
+                                    <span className={`px-2 py-1 rounded text-white ${suburb.biggest_risk.type === "Riverine Flooding" ? "bg-blue-600" :
+                                            suburb.biggest_risk.type === "Forest Fire" ? "bg-red-700" :
+                                                suburb.biggest_risk.type === "Surface Water Flooding" ? "bg-purple-600" :
+                                                    suburb.biggest_risk.type === "Coastal Inundation" ? "bg-yellow-600" : "bg-gray-600"
+                                        }`}>
                                         {suburb.biggest_risk.type}
                                     </span>
                                 </td>

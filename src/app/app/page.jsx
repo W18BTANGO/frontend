@@ -4,8 +4,8 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import {
+    Undo,
     LayoutDashboard,
-    Settings,
     Home,
     X,
     ChevronLeft,
@@ -16,6 +16,7 @@ import Dashboard from "@/components/Dashboard"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip"
 import { cn } from "@/lib/utils"
 import { useMediaQuery } from "@/hooks/use-mobile"
+
 
 export default function AppPage() {
     const [sidebarOpen, setSidebarOpen] = useState(false)
@@ -64,7 +65,7 @@ export default function AppPage() {
             {/* Sidebar */}
             <div
                 className={cn(
-                    "fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-lg transform transition-all duration-300 ease-in-out",
+                    "fixed inset-y-0 left-0 z-50 bg-white dark:bg-gray-800 shadow-right-only transform transition-all duration-300 ease-in-out",
                     collapsed ? "w-[70px]" : "w-64",
                     isMobile ? (sidebarOpen ? "translate-x-0" : "-translate-x-full") : "translate-x-0",
                     "md:relative md:z-0",
@@ -146,48 +147,51 @@ export default function AppPage() {
                                     </Link>
                                 )}
                             </li>
-
                             <li>
                                 {collapsed ? (
                                     <Tooltip>
                                         <TooltipTrigger asChild>
                                             <Link
-                                                href="#"
+                                                href="/"
                                                 className={cn(
                                                     "flex items-center justify-center h-10 w-10 rounded-md mx-auto",
-                                                    activeTab === "settings"
+                                                    activeTab === "landing"
                                                         ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white"
                                                         : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
                                                 )}
-                                                onClick={() => setActiveTab("settings")}
+                                                onClick={() => setActiveTab("landing")}
                                             >
-                                                <Settings className="h-5 w-5" />
+                                                <Undo className="h-5 w-5" />
                                             </Link>
                                         </TooltipTrigger>
-                                        <TooltipContent side="right">Settings</TooltipContent>
+                                        <TooltipContent side="right">Landing Page</TooltipContent>
                                     </Tooltip>
                                 ) : (
                                     <Link
-                                        href="#"
+                                        href="/"
                                         className={cn(
                                             "flex items-center px-4 py-2 rounded-md",
-                                            activeTab === "settings"
+                                            activeTab === "landing"
                                                 ? "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-white"
                                                 : "text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700",
                                         )}
-                                        onClick={() => setActiveTab("settings")}
+                                        onClick={() => setActiveTab("landing")}
                                     >
-                                        <Settings className="h-5 w-5 mr-3" />
-                                        <span className="transition-opacity duration-200">Settings</span>
+                                        <Undo className="h-5 w-5 mr-3" />
+                                        <span className="transition-opacity duration-200">Landing Page</span>
                                     </Link>
                                 )}
                             </li>
+
+
+
+
                         </TooltipProvider>
                     </ul>
                 </nav>
             </div>
             {/* Main content */}
-            {activeTab == "dashboard" ? <Dashboard /> : <Settings />}
+            {<Dashboard />}
 
 
         </div>
