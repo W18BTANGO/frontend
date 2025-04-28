@@ -9,7 +9,7 @@ import SuburbInfo from "@/components/SuburbInfo"
 import VulnerableSuburbs from "@/components/VulnerableSuburbs"
 import { initialSuburb } from '@/lib/initialValues'
 import { getDataByEventTypeAndSuburb } from '@/lib/preprocessing';
-import { interpolateRisks } from '@/lib/analytics';
+import { fetchPredictedRisks } from '@/lib/analytics';
 
 
 
@@ -55,19 +55,16 @@ export default function Dashboard() {
             // Parse the selected year
             const targetYear = selectedYear;
 
-            // Extract the years and their corresponding data
-            const yearData = filteredData.map(item => ({
-                year: new Date(item.time_object.timestamp).getUTCFullYear(),
-                attributes: item.attributes,
-            }));
-
-            // Sort the data by year (just in case it's not sorted)
-            yearData.sort((a, b) => a.year - b.year);
+            // Sort the filteredData by year (just in case it's not sorted)
+            filteredData.sort((a, b) =>
+                new Date(a.time_object.timestamp).getUTCFullYear() -
+                new Date(b.time_object.timestamp).getUTCFullYear()
+            );
 
             // Interpolate the risks for the target year
-            const interpolatedRisks = interpolateRisks(yearData, targetYear);
+            const interpolatedRisks = await fetchPredictedRisks(filteredData, targetYear);
             console.log('Interpolated Risks:', interpolatedRisks);
-            
+
             // Find the highest risk, excluding "Total MVAR"
             const matchedRisk = Object.entries(interpolatedRisks)
                 .filter(([name]) => name !== "Total MVAR") // Exclude Total MVAR
@@ -97,13 +94,13 @@ export default function Dashboard() {
     useEffect(() => {
         if (searchQuery.trim().length > 1 && allSuburbs.length > 0) {
             const lowerQuery = searchQuery.toLowerCase();
-            
+
             // Search directly in all suburbs without prioritizing vulnerable suburbs
             const matches = allSuburbs
                 .filter(s => s.name.toLowerCase().includes(lowerQuery))
                 .slice(0, 5)
                 .map(s => ({ suburb: s.name }));
-                
+
             setSearchResults(matches);
         } else {
             setSearchResults([]);
@@ -121,9 +118,9 @@ export default function Dashboard() {
         <div className="flex flex-col min-h-screen bg-gray-50">
             <Header />
 
-            <TimelineSlider 
-                selectedYear={selectedYear} 
-                setSelectedYear={handleYearChange} 
+            <TimelineSlider
+                selectedYear={selectedYear}
+                setSelectedYear={handleYearChange}
             />
 
             <main className="flex-1 p-6">

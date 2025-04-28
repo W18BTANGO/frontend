@@ -38,3 +38,55 @@ export function interpolateRisks(yearData, targetYear) {
 
     return interpolated;
 }
+
+const attributes =  [
+    "Coastal Inundation",
+    "Extreme Wind", 
+    "Forest Fire",
+    "Riverine Flooding",
+    "Surface Water Flooding",
+    "Tropical Cyclone Wind",
+    "Total MVAR",
+    "a",
+    "bbox",
+    "c"
+]
+
+/**
+* Fetches predicted risk values for a specific year from our analytics API
+* @param {Array} yearData - Array of objects containing year and attributes.
+* @param {number} targetYear - The year to predict for.
+* @returns {Promise<Object>} - A promise that resolves to the predicted risk values.
+*/
+export async function fetchPredictedRisks(yearData, targetYear) {
+   try {
+       // Prepare the request body
+       const requestBody = {
+           time_point: targetYear,
+           value_attributes: attributes, // Assuming attributes are the same structure across yearData
+           data: yearData,
+       };
+       console.log(requestBody)
+
+       // Make the POST request to the prediction endpoint
+       const response = await fetch("http://127.0.0.1:8000/predict-attributes-for-time", {
+           method: "POST",
+           headers: {
+               "Content-Type": "application/json",
+           },
+           body: JSON.stringify(requestBody),
+       });
+
+       // Check if the response is successful
+       if (!response.ok) {
+           throw new Error(`Failed to fetch predicted risks: ${response.statusText}`);
+       }
+
+       // Parse and return the JSON response
+       const predictedRisks = await response.json();
+       return predictedRisks;
+   } catch (error) {
+       console.error("Error fetching predicted risks:", error);
+       return {}; // Return an empty object as a fallback
+   }
+}
