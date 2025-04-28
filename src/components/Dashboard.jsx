@@ -67,7 +67,7 @@ export default function Dashboard() {
             // Interpolate the risks for the target year
             const interpolatedRisks = interpolateRisks(yearData, targetYear);
             console.log('Interpolated Risks:', interpolatedRisks);
-            
+
             // Find the highest risk, excluding "Total MVAR"
             const matchedRisk = Object.entries(interpolatedRisks)
                 .filter(([name]) => name !== "Total MVAR") // Exclude Total MVAR
@@ -97,13 +97,13 @@ export default function Dashboard() {
     useEffect(() => {
         if (searchQuery.trim().length > 1 && allSuburbs.length > 0) {
             const lowerQuery = searchQuery.toLowerCase();
-            
+
             // Search directly in all suburbs without prioritizing vulnerable suburbs
             const matches = allSuburbs
                 .filter(s => s.name.toLowerCase().includes(lowerQuery))
                 .slice(0, 5)
                 .map(s => ({ suburb: s.name }));
-                
+
             setSearchResults(matches);
         } else {
             setSearchResults([]);
@@ -118,12 +118,11 @@ export default function Dashboard() {
     };
 
     return (
-        <div className="flex flex-col min-h-screen bg-gray-50">
-            <Header />
+        <div className="flex flex-col min-h-screen bg-gray-50 dark:bg-gray-800">
 
-            <TimelineSlider 
-                selectedYear={selectedYear} 
-                setSelectedYear={handleYearChange} 
+            <TimelineSlider
+                selectedYear={selectedYear}
+                setSelectedYear={handleYearChange}
             />
 
             <main className="flex-1 p-6">
