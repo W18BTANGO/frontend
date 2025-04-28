@@ -56,7 +56,7 @@ export default function LandingPage() {
                     </div>
                     <div className="relative w-full h-[400px] rounded-lg overflow-hidden shadow-2xl">
                         <Image
-                            src="/visual.png"
+                            src="/graph.png"
                             alt="Climate data visualization"
                             fill
                             className="object-cover"
@@ -120,17 +120,17 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4">
                     <h2 className="text-3xl md:text-4xl font-bold text-center mb-16">Our Platform Features</h2>
 
-                    <div className="grid md:grid-cols-2 gap-16 items-center">
+                    <div className="grid md:grid-cols-2 gap-8 items-center">
                         <div className="order-2 md:order-1">
                             <div className="space-y-8">
-                                <div className="flex gap-4">
+                                <div className="flex gap-2">
                                     <div className="flex-shrink-0 h-10 w-10 rounded-full bg-green-100 flex items-center justify-center">
                                         <span className="font-bold text-green-600">1</span>
                                     </div>
                                     <div>
-                                        <h3 className="text-xl font-bold mb-2">LGA-Specific Climate Predictions</h3>
+                                        <h3 className="text-xl font-bold mb-2">Suburb-Specific Climate Predictions</h3>
                                         <p className="text-gray-600">
-                                            Access detailed climate projections tailored to specific Local Government Areas across Australia.
+                                            Access detailed climate projections tailored to specific suburbs across Australia.
                                         </p>
                                     </div>
                                 </div>
@@ -162,15 +162,18 @@ export default function LandingPage() {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="order-1 md:order-2 relative h-[400px] rounded-lg overflow-hidden shadow-xl">
-                            <Image
-                                src="/placeholder.svg?height=800&width=600"
-                                alt="Platform interface"
-                                fill
-                                className="object-cover"
-                            />
+                        <div className="w-[300px]">
+                            <div className="order-1 md:order-2 relative h-[400px] rounded-lg overflow-hidden shadow-xl">
+                                <Image
+                                    src="/chart.png"
+                                    alt="Platform interface"
+                                    fill
+                                    className="object-cover"
+                                />
+                            </div>
                         </div>
+
+
                     </div>
                 </div>
             </section>
@@ -185,8 +188,8 @@ export default function LandingPage() {
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
                         <div>
-                            <div className="text-4xl font-bold text-green-600 mb-2">150+</div>
-                            <p className="text-gray-600">LGAs Supported</p>
+                            <div className="text-4xl font-bold text-green-600 mb-2">15k+</div>
+                            <p className="text-gray-600">Suburb Supported</p>
                         </div>
                         <div>
                             <div className="text-4xl font-bold text-green-600 mb-2">50M+</div>
@@ -209,7 +212,7 @@ export default function LandingPage() {
                 <div className="container mx-auto px-4 text-center">
                     <h2 className="text-3xl md:text-4xl font-bold mb-6">Ready to Build Climate Resilience?</h2>
                     <p className="text-xl max-w-2xl mx-auto mb-8">
-                        Access our platform to get started with climate data predictions for your Local Government Area.
+                        Access our platform to get started with climate data predictions for your suburb.
                     </p>
                     <Link href="/app">
                         <Button size="lg" variant="secondary" className="bg-white text-green-600 hover:bg-gray-100">
